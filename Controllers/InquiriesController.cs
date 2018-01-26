@@ -96,7 +96,13 @@ namespace Student7.Controllers
                 return NotFound();
             }
 
+            
+
             var inquiry = await _context.Inquiry.SingleOrDefaultAsync(m => m.InquiryId == id);
+            var service = CRM.CrmService.GetServiceProvider();
+            var crmInquiry = service.Retrieve("stu7_inquiry", inquiry.InquiryId, new Microsoft.Xrm.Sdk.Query.ColumnSet("stu7_response"));
+
+            inquiry.Response = crmInquiry.GetAttributeValue<string>("stu7_response");
             if (inquiry == null)
             {
                 return NotFound();
@@ -121,6 +127,12 @@ namespace Student7.Controllers
                 try
                 {
                     _context.Update(inquiry);
+
+                    var service = CRM.CrmService.GetServiceProvider();
+                    var crmInquiry = service.Retrieve("stu7_inquiry", inquiry.InquiryId, new Microsoft.Xrm.Sdk.Query.ColumnSet("stu7_response"));
+                    crmInquiry["stu7_question"] = inquiry.Question;
+                    service.Update(crmInquiry);
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -165,6 +177,10 @@ namespace Student7.Controllers
             var inquiry = await _context.Inquiry.SingleOrDefaultAsync(m => m.InquiryId == id);
             _context.Inquiry.Remove(inquiry);
             await _context.SaveChangesAsync();
+
+            var service = CRM.CrmService.GetServiceProvider();
+            service.Delete("stu7_inquiry", id);
+
             return RedirectToAction("Index");
         }
 
